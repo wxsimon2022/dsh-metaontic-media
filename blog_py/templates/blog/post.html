@@ -1,0 +1,86 @@
+{% extends "blog/base.html" %}
+{% block title %}{{ post.title }} · 个人博客{% endblock %}
+{% block head %}
+  {% if post.meta_description %}<meta name="description" content="{{ post.meta_description|e }}" />{% endif %}
+{% endblock %}
+{% block content %}
+  <article class="card">
+    <h1>{{ post.title }}</h1>
+    <div class="meta">
+      {% if post.published_at %}{{ post.published_at.strftime('%Y-%m-%d %H:%M') }}{% endif %}
+      · {{ like_count }} 赞
+      · {{ view_count }} 阅读
+      {% if post.category %} · <a href="{{ url_for('blog.category_posts', slug=post.category.slug) }}">{{ post.category.name }}</a>{% endif %}
+    </div>
+    {% if post.tags %}
+      <p class="meta" style="margin-top:0.35rem;">
+        {% for t in post.tags %}
+          <a href="{{ url_for('blog.tag_posts', slug=t.slug) }}">#{{ t.name }}</a>{% if not loop.last %} {% endif %}
+        {% endfor %}
+      </p>
+    {% endif %}
+    <div class="post-body">{{ post.body | render_md }}</div>
+    <form method="post" action="{{ url_for('blog.post_like', slug=post.slug) }}" style="margin-top:1rem;">
+      <button type="submit" class="primary">点赞 +1</button>
+    </form>
+  </article>
+
+  <section class="card">
+    <div class="row" style="justify-content:space-between; align-items:center; margin-bottom:0.75rem; flex-wrap:wrap; gap:0.5rem;">
+      <h2 class="list-title" style="margin:0;">评论</h2>
+      <button type="button" class="btn" id="comment-toggle-btn" aria-controls="comment-form-panel" aria-expanded="{{ 'true' if open_comment_form else 'false' }}">{{ '收起' if open_comment_form else '写评论' }}</button>
+    </div>
+    {% for c in comments %}
+      <div style="border-bottom:1px solid var(--line); padding:0.5rem 0;">
+        <div class="row meta" style="justify-content:space-between;">
+          <strong>{{ c.author_name }}</strong>
+          <span>{{ c.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+        </div>
+        <div style="white-space:pre-wrap; margin-top:0.35rem;">{{ c.body | e }}</div>
+      </div>
+    {% else %}
+      <p class="meta">暂无已审核评论，欢迎抢沙发。</p>
+    {% endfor %}
+
+    <div id="comment-form-panel" role="region" aria-label="发表评论" {% if not open_comment_form %}hidden{% endif %}>
+      <h3 style="margin:1rem 0 0.35rem; font-size:0.95rem;">发表评论</h3>
+      <form method="post" action="{{ url_for('blog.post_comment', slug=post.slug) }}">
+        <label for="author_name">昵称</label>
+        <input id="author_name" type="text" name="author_name" required maxlength="128" />
+        <label for="author_email">邮箱（可选）</label>
+        <input id="author_email" type="email" name="author_email" maxlength="255" />
+        <label for="author_url">网站（可选）</label>
+        <input id="author_url" type="url" name="author_url" maxlength="512" />
+        <label for="body">内容</label>
+        <textarea id="body" name="body" required rows="5" maxlength="20000"></textarea>
+        <p style="margin-top:0.75rem;"><button type="submit" class="primary">提交（待审核）</button></p>
+      </form>
+    </div>
+  </section>
+  <script>
+  (function () {
+    var panel = document.getElementById("comment-form-panel");
+    var btn = document.getElementById("comment-toggle-btn");
+    if (!panel || !btn) return;
+    function setOpen(open) {
+      if (open) {
+        panel.removeAttribute("hidden");
+        btn.textContent = "收起";
+        btn.setAttribute("aria-expanded", "true");
+      } else {
+        panel.setAttribute("hidden", "");
+        btn.textContent = "写评论";
+        btn.setAttribute("aria-expanded", "false");
+      }
+    }
+    btn.addEventListener("click", function () {
+      var open = panel.hasAttribute("hidden");
+      setOpen(open);
+      if (open) {
+        var el = panel.querySelector("#author_name");
+        if (el) el.focus();
+      }
+    });
+  })();
+  </script>
+{% endblock %}

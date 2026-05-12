@@ -1,0 +1,8 @@
+redis>=4.0
+click>=8.0
+flask>=3.0
+flask-sqlalchemy>=3.1
+pymysql>=1.1
+markdown>=3.5
+python-dotenv>=1.0
+bcrypt>=4.0

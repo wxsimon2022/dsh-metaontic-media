@@ -1,0 +1,44 @@
+{% extends "blog/admin_base.html" %}
+{% block title %}{% if post %}编辑{% else %}新文章{% endif %}{% endblock %}
+{% block content %}
+  <div class="card">
+    <h2 style="margin-top:0; font-size:1rem;">{% if post %}编辑文章{% else %}新文章{% endif %}</h2>
+    <form method="post">
+      <label for="title">标题</label>
+      <input id="title" name="title" type="text" required maxlength="255" value="{{ post.title if post else '' }}" />
+
+      <label for="slug">Slug（可空，自动生成）</label>
+      <input id="slug" name="slug" type="text" maxlength="255" value="{{ post.slug if post else '' }}" />
+
+      <label for="category_id">分类</label>
+      <select id="category_id" name="category_id">
+        <option value="">（无）</option>
+        {% for c in categories %}
+          <option value="{{ c.id }}" {% if post and post.category_id == c.id %}selected{% endif %}>{{ c.name }}</option>
+        {% endfor %}
+      </select>
+
+      <label for="excerpt">摘要</label>
+      <input id="excerpt" name="excerpt" type="text" maxlength="512" value="{{ post.excerpt or '' }}" />
+
+      <label for="tags">标签（逗号分隔）</label>
+      <input id="tags" name="tags" type="text" value="{% if post %}{{ post.tags | map(attribute='name') | join(', ') }}{% endif %}" placeholder="MySQL, 设计" />
+
+      <label for="status">状态</label>
+      <select id="status" name="status">
+        {% set st = post.status if post else 'draft' %}
+        <option value="draft" {% if st == 'draft' %}selected{% endif %}>draft</option>
+        <option value="published" {% if st == 'published' %}selected{% endif %}>published</option>
+        <option value="archived" {% if st == 'archived' %}selected{% endif %}>archived</option>
+      </select>
+
+      <label for="body">正文（Markdown）</label>
+      <textarea id="body" name="body" required>{{ post.body if post else '' }}</textarea>
+
+      <p style="margin-top:0.75rem;">
+        <button type="submit" class="primary">保存</button>
+        <a class="btn" href="{{ url_for('blog_admin.posts') }}">返回</a>
+      </p>
+    </form>
+  </div>
+{% endblock %}
