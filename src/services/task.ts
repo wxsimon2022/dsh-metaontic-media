@@ -1,3 +1,4 @@
+import { MediaError } from '../shared/errors.js';
 import { randomUUID } from 'node:crypto';
 import type { MediaProvider, MediaRequest, ProviderResult } from '../types/media.js';
 import { validateRequest } from '../models/gateway.js';
@@ -30,7 +31,10 @@ export class TaskService {
       await this.repository.write(id, task);
       let result: ProviderResult;
       try { result = await this.provider.submit(structuredClone(task.request)); }
-      catch { task.state = 'SUBMISSION_UNKNOWN'; await this.repository.write(id, task); return task; }
+      catch (error) {
+        task.state = error instanceof MediaError && ['AUTH_FAILED', 'RATE_LIMITED', 'CONTENT_REJECTED', 'UNSUPPORTED_CAPABILITY', 'CONFIG_INVALID'].includes(error.code) ? 'FAILED' : 'SUBMISSION_UNKNOWN';
+        await this.repository.write(id, task); return task;
+      }
       return this.saveResult(task, result);
     });
   }
