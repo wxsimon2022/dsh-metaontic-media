@@ -12,12 +12,23 @@
     "node": ">=20"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "node --input-type=module -e \"import { rmSync } from 'node:fs'; rmSync('dist', { recursive: true, force: true });\" && tsc -p tsconfig.json",
     "typecheck": "tsc --noEmit",
-    "test": "npm run build && node --test tests/unit/*.test.mjs"
+    "test": "npm run build && node --test tests/unit/*.test.mjs",
+    "prepack": "npm run build"
   },
   "devDependencies": {
     "typescript": "^5.9.3",
     "@types/node": "^20.19.43"
+  },
+  "description": "MetaOntic Media for DeepSeek Harness \u2014 early development placeholder",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wxsimon2022/dsh-metaontic-media.git"
+  },
+  "homepage": "https://github.com/wxsimon2022/dsh-metaontic-media#readme",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   }
 }

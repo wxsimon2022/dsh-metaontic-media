@@ -1,9 +1,51 @@
+# Dependencies and generated builds
+node_modules/
+/dist/
+/build/
+*.tsbuildinfo
+*.tgz
+
+# Tests and tool caches
+coverage/
+.nyc_output/
+.cache/
+.vitest/
+.playwright/
+playwright-report/
+test-results/
+
+# Secrets and machine-local configuration
 .env
+.env.*
+!.env.example
+!.env.*.example
+*.pem
+*.key
+/config.local.json
+/config.*.local.json
+
+# Plugin runtime data and generated media
+/plugin-data/
+/data/
+/output/
+/outputs/
+/tmp/
+/temp/
+logs/
+*.log
+
+# Editor and OS files
+.idea/
+.vscode/
+.DS_Store
+._*
+Thumbs.db
+Desktop.ini
+*.swp
+*.swo
+*~
+
+# Python helper caches
 .venv/
 __pycache__/
-*.pyc
-.idea/
-
-node_modules/
-dist/
-*.tgz
+*.py[cod]
