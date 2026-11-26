@@ -1,5 +1,5 @@
 export interface HostExec { agent?: unknown; callId?: string; signal?: AbortSignal }
-export interface ToolDefinition { name: string; description: string; parameters: unknown; execute(args: unknown, exec?: HostExec): Promise<unknown> }
+export interface ToolDefinition { name: string; description: string; parameters: unknown; output: { schema: unknown; render(args: unknown, value: unknown): { type: 'text'; text: string }[] }; execute(args: unknown, exec?: HostExec): Promise<unknown> }
 export interface HostContext {
   tools: { register(tool: ToolDefinition): (() => void) | void };
   inject?(names: string[], callback: (ctx: HostContext) => unknown): unknown;

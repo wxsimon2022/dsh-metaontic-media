@@ -9,3 +9,5 @@ export * from './app/bootstrap.js';
 export * from './config/schema.js';
 export * from './services/asset.service.js';
 export { apply, inject } from './platform/dsh/lifecycle.js';
+
+export { Config } from './platform/dsh/settings/schema.js';

@@ -8,19 +8,22 @@
     "dist",
     "README.md",
     "cordis.patch.yml",
-    "docs/config.example.json"
+    "docs/config.example.json",
+    "locale/*.json",
+    "plugin-detail.md"
   ],
   "engines": {
     "node": ">=20"
   },
   "scripts": {
-    "build": "node --input-type=module -e \"import { rmSync } from 'node:fs'; rmSync('dist', { recursive: true, force: true });\" && tsc -p tsconfig.json",
+    "build": "node --input-type=module -e \"import { rmSync } from 'node:fs'; rmSync('dist', { recursive: true, force: true });\" && tsc -p tsconfig.json && esbuild src/client.ts --bundle --format=iife --platform=browser --target=es2022 --outfile=dist/client.js",
     "typecheck": "tsc --noEmit",
     "test": "npm run build && node --test tests/unit/*.test.mjs tests/integration/*.test.mjs",
     "prepack": "npm run build"
   },
   "devDependencies": {
     "@types/node": "^20.19.43",
+    "esbuild": "^0.28.2",
     "typescript": "^5.9.3"
   },
   "description": "MetaOntic Media：自然语言图片与视频生成、任务恢复和本地素材管理",
@@ -34,11 +37,28 @@
     "registry": "https://registry.npmjs.org/"
   },
   "dependencies": {
+    "@deepseek-ai/schemastery": "^3.19.0",
     "zod": "^4.6.7"
   },
   "dsh": {
     "bundle": {
       "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-settings"
+      ]
     }
+  },
+  "readme": "",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./client": "./dist/client.js",
+    "./package.json": "./package.json",
+    "./locale/*.json": "./locale/*.json"
   }
 }

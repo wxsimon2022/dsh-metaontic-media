@@ -1,0 +1,41 @@
+import S from '@deepseek-ai/schemastery';
+const model = (video: boolean) => S.object({
+  id: S.string().description('本地模型标识：自定义唯一名称，用于选择默认模型'),
+  name: S.string().description('模型显示名称'),
+  providerId: S.string().description('服务商标识：填写上方已添加服务商的标识'),
+  model: S.string().description('上游模型 ID：填写渠道提供的真实模型名称'),
+  enabled: S.boolean().default(false).description('启用模型：确认真实模型 ID、能力和协议后再开启'),
+  modes: S.array(S.union(['text','image','edit','first-last-frame'])).default(['text']).description('生成方式：text 文生、image 参考图、edit 编辑、first-last-frame 首尾帧'),
+  aspectRatios: S.array(S.string()).default([]).description('支持的画幅，例如 16:9、9:16'),
+  resolutions: S.array(S.string()).default([]).description('支持的分辨率，填写渠道实际接受的值'),
+  ...(video ? { durations: S.array(S.number()).default([]).description('支持的视频秒数，例如 5、10、15'), nativeAudio: S.boolean().default(false).description('支持原生音频') } : {}),
+  maxReferences: S.number().default(0).description('最多参考图片数量'),
+  negativePrompt: S.boolean().default(false).description('支持负面提示词'),
+  cancellation: S.boolean().default(false).description('支持远端取消'),
+  idempotency: S.boolean().default(false).description('支持幂等提交'),
+});
+export const Config = S.object({
+  scopeMode: S.union(['global','project','session']).default('global').description('数据作用域：global 全局共享；project 按工作目录隔离；session 按会话隔离。仅隔离草稿、任务、素材与用量；模型配置共享，历史数据不自动迁移。'),
+  providers: S.array(S.object({
+    id: S.string().description('服务商标识：例如 my-provider，同一服务商下模型共用此标识'),
+    name: S.string().description('服务商名称'), enabled: S.boolean().default(true).description('启用服务商'),
+    baseUrl: S.string().description('API 服务地址，例如 https://你的渠道域名'),
+    apiKeyRef: S.string().description('凭据引用：env:MEDIA_API_KEY；请在启动 DSH 的环境中设置密钥，不在此填写密钥原文'),
+    imageEnabled: S.boolean().default(true).description('接入图片接口（OpenAI 图片协议）'),
+    videoEnabled: S.boolean().default(false).description('接入视频接口（需配置下方已核验协议）'),
+    timeoutMs: S.number().default(60000).description('接口超时，单位毫秒'),
+    discoveryPath: S.string().description('可选：已核验的模型列表路径，例如 /v1/models'),
+    testPath: S.string().description('可选：非付费连接测试路径'),
+    videoProtocol: S.string().role('textarea').description('高级：已核验的视频协议 JSON，包含 submitPath、queryPath 和 states；未知协议不要启用视频模型'),
+  })).description('① 服务商：添加 API 地址及凭据引用'),
+  imageModels: S.array(model(false)).description('② 图片模型：添加上游模型并配置能力'),
+  videoModels: S.array(model(true)).description('③ 视频模型：添加上游模型、时长及能力'),
+  defaults: S.object({
+    imageModelId: S.string().description('默认图片模型：填写已启用图片模型的本地标识'),
+    videoModelId: S.string().description('默认视频模型：填写已启用视频模型的本地标识'),
+    videoDuration: S.number().description('默认视频秒数：必须是模型支持的时长'),
+    videoAspectRatio: S.string().description('默认视频画幅，例如 16:9'),
+  }).description('④ 默认模型：图片和视频分别选择；文本推理继续使用 DSH 当前模型'),
+  outputDir: S.string().description('输出目录：相对于插件数据目录，例如 media-output'),
+  dataDirectory: S.string().description('高级：插件数据目录，留空使用默认目录'),
+});
