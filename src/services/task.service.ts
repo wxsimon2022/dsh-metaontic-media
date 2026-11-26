@@ -1,9 +1,11 @@
+import type { MediaConfig } from '../config/schema.js';
 import { MediaError } from '../shared/errors.js';
 import { randomUUID, createHash } from 'node:crypto';
 import type { MediaProvider, MediaRequest, ProviderResult } from '../types/media.js';
 import { validateRequest } from '../providers/capabilities.js';
 import { Repository } from '../storage/atomic-json.js';
 export interface Task {
+  binding?: { provider: MediaConfig['providers'][number]; model: MediaConfig['models'][number]; upstreamModels: Record<string, string> };
   schemaVersion: 1; id: string; request: MediaRequest;
   state: 'AWAITING_CONFIRMATION' | 'CANCELLED' | 'SUBMITTING' | 'SUBMISSION_UNKNOWN' | 'RUNNING' | 'DOWNLOADING' | 'FAILED' | 'PAUSED' | 'SUCCEEDED';
   assetIds?: string[]; error?: { code: string; message: string };

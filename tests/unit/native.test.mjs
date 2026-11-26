@@ -1,3 +1,5 @@
+import { ConfigManager } from '../../dist/config/config-manager.js';
+import { defaultConfig } from '../../dist/config/defaults.js';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtemp, rm } from 'node:fs/promises';
@@ -9,11 +11,12 @@ import { Queue } from '../../dist/services/queue.js';
 const image = { mediaType: 'image', modes: ['text'], maxReferences: 0, nativeAudio: false, negativePrompt: false, cancellation: false, idempotency: false };
 test('native tools register, use host prompts and dispose', async () => {
  const root = await mkdtemp(join(tmpdir(), 'native-')); const tools = new Map(); let sections = 0; let removed = 0;
- const stop = apply({ tools: { register(t) { tools.set(t.name,t); return () => { removed++; }; } }, systemPrompt: { section(s) { assert.ok(s.text.includes('DSH')); sections++; } } }, { dataDirectory: root });
+ const stop = apply({ get(name) { return name === 'approval' ? { request: async input => input.toolName === 'media_settings' ? 'allowed-once' : 'rejected' } : undefined; }, tools: { register(t) { tools.set(t.name,t); return () => { removed++; }; } }, get systemPrompt() { throw new Error('cannot get property systemPrompt without inject'); }, inject(names, callback) { assert.deepEqual(names,['systemPrompt']); callback({systemPrompt:{section(s){assert.ok(s.text.includes('DSH'));sections++;}}}); } }, { dataDirectory: root });
  try {
  assert.equal(sections,1); assert.ok(tools.has('media_prepare')); assert.ok(tools.has('media_generate_video'));
  const invoke = (name,args) => tools.get(name).execute(args);
- const saved = await invoke('media_config',{config:{version:1,providers:[{id:'p',adapter:'openai-image',baseUrl:'https://example.com',apiKeyEnv:'KEY'}],models:[{id:'image',providerId:'p',capabilities:image}]}}); assert.equal(saved.ok,true);
+ const config = defaultConfig(); config.providers.push({id:'p',name:'Provider',enabled:true,baseUrl:'https://example.com',apiKeyRef:'env:KEY',adapters:{image:'openai-image'},timeoutMs:60000,allowPrivateService:false}); config.models.push({id:'image',name:'Image',providerId:'p',model:'upstream-image',enabled:true,capabilities:image,capabilitySource:'manual'}); const saved = await tools.get('media_settings').execute({action:'replace',revision:null,config},{agent:{}}); assert.equal(saved.ok,true); assert.equal(saved.data.saved,true);
+ assert.equal((await invoke('media_config',{config:{}})).ok,false);
  const draft = await invoke('media_prepare',{idea:'cat',request:{model:'image',mediaType:'image',mode:'text',prompt:'cat',references:[]}}); assert.equal(draft.ok,true);
  const result = await invoke('media_generate_image',{draftId:draft.data.draftId}); assert.equal(result.data.state,'CANCELLED');
  const prompt = await invoke('media_prepare',{idea:'cat',promptOnly:true}); assert.equal(prompt.ok,true); assert.equal(prompt.data.task,undefined);

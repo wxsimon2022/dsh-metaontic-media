@@ -1,13 +1,13 @@
 import { downloadFetch } from './download.service.js';
 import { randomUUID, createHash } from 'node:crypto';
 import { mkdir, open, rename, unlink, readFile, realpath, lstat } from 'node:fs/promises';
-import { join, resolve, sep } from 'node:path';
+import { join, resolve, relative, sep } from 'node:path';
 import { Repository } from '../storage/atomic-json.js';
 import { mediaSignature, validateDownloadUrl } from '../shared/media-validation.js';
 export interface Asset { schemaVersion: 1; id: string; projectId: string; taskId?: string; relativePath: string; mimeType: string; size: number; sha256: string; source: 'generated' | 'reference'; createdAt: string }
 export class AssetService {
   readonly repository: Repository<Asset>;
-  constructor(private root: string, private maxBytes: number, private fetchImpl: typeof fetch = downloadFetch) { this.repository = new Repository(join(root, 'assets')); }
+  constructor(private root: string, private maxBytes: number, private fetchImpl: typeof fetch = downloadFetch, private outputDir?: string) { this.repository = new Repository(join(root, 'assets')); }
   async list() { return this.repository.list(); }
   async read(id: string) {
     const asset = await this.repository.read(id);
@@ -29,7 +29,8 @@ export class AssetService {
   async save(output: { url?: string; base64?: string; mimeType?: string }, projectId: string, taskId?: string, source: Asset['source'] = 'generated'): Promise<Asset> {
     if (!/^[\w-]+$/.test(projectId)) throw new Error('Invalid project ID');
     const id = randomUUID();
-    const directory = join(this.root, 'projects', projectId, source === 'reference' ? 'references' : 'output');
+    const directory = source === 'generated' && this.outputDir ? resolve(this.root, this.outputDir, projectId) : join(this.root, 'projects', projectId, source === 'reference' ? 'references' : 'output');
+    if (!directory.startsWith(resolve(this.root) + sep)) throw new Error('Unsafe output directory');
     await mkdir(directory, { recursive: true, mode: 0o700 });
     const root = await realpath(this.root);
     if (!(await realpath(directory)).startsWith(root + sep)) throw new Error('Unsafe output directory');
@@ -66,7 +67,7 @@ export class AssetService {
       const signature = mediaSignature(Buffer.concat(prefix));
       if (declared && declared !== 'application/octet-stream' && declared !== signature.mimeType) throw new Error('DOWNLOAD_FAILED: content type mismatch');
       await file.sync(); await file.close();
-      const relativePath = `projects/${projectId}/${source === 'reference' ? 'references' : 'output'}/${id}.${signature.extension}`;
+      const relativePath = relative(this.root, join(directory, `${id}.${signature.extension}`));
       await rename(temporary, resolve(this.root, relativePath));
       const asset: Asset = { schemaVersion: 1, id, projectId, taskId, relativePath, mimeType: signature.mimeType, size, sha256: hash.digest('hex'), source, createdAt: new Date().toISOString() };
       await this.repository.write(id, asset); return asset;

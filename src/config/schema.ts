@@ -5,7 +5,7 @@ export const capabilitiesSchema = z.object({
   aspectRatios: z.array(z.string()).optional(), durations: z.array(z.number().positive()).optional(), resolutions: z.array(z.string()).optional(),
   maxReferences: z.number().int().nonnegative(), nativeAudio: z.boolean(), negativePrompt: z.boolean(), cancellation: z.boolean(), idempotency: z.boolean(),
 });
-const provider = z.object({ id: z.string().min(1), adapter: z.enum(['openai-image', 'newapi-video']), baseUrl: z.url(), apiKeyEnv: z.string().regex(/^[A-Z_][A-Z0-9_]*$/), allowPrivateService: z.boolean().default(false),
+const provider = z.object({ timeoutMs: z.number().int().positive().optional(), id: z.string().min(1), adapter: z.enum(['openai-image', 'newapi-video']), baseUrl: z.url(), apiKeyEnv: z.string().regex(/^[A-Z_][A-Z0-9_]*$/), allowPrivateService: z.boolean().default(false),
   protocol: z.object({ submitPath: z.string(), queryPath: z.string(), cancelPath: z.string().optional(), idempotencyHeader: z.string().regex(/^[A-Za-z0-9-]+$/).optional(), fields: z.record(z.string(), z.string()).default({}), states: z.record(z.string(), z.enum(['queued', 'running', 'succeeded', 'failed', 'cancelled'])), idField: z.string().default('id'), stateField: z.string().default('status'), outputsField: z.string().default('outputs') }).optional() });
 export const configSchema = z.object({ version: z.literal(1), providers: z.array(provider), models: z.array(z.object({ id: z.string().min(1), providerId: z.string(), capabilities: capabilitiesSchema })),
   defaults: z.object({ imageModel: z.string().optional(), videoModel: z.string().optional(), optimize: z.boolean().default(true), confirmPaidGeneration: z.literal(true).default(true) }).default({ optimize: true, confirmPaidGeneration: true }),

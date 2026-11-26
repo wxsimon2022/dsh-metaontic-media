@@ -2,6 +2,7 @@ export interface HostExec { agent?: unknown; callId?: string; signal?: AbortSign
 export interface ToolDefinition { name: string; description: string; parameters: unknown; execute(args: unknown, exec?: HostExec): Promise<unknown> }
 export interface HostContext {
   tools: { register(tool: ToolDefinition): (() => void) | void };
+  inject?(names: string[], callback: (ctx: HostContext) => unknown): unknown;
   get?(name: string): unknown;
   systemPrompt?: { section(input: { name: string; order: number; text: string }): unknown };
   settings?: { documentPath?: string };
