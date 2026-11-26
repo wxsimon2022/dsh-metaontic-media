@@ -1,6 +1,6 @@
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { readFile, copyFile } from 'node:fs/promises';
+import { readFile, copyFile, readdir } from 'node:fs/promises';
 import { Repository } from '../storage/atomic-json.js';
 import { snapshotSchema, type ConfigSnapshot } from './config-validator.js';
 import { defaultConfig } from './defaults.js';
@@ -28,6 +28,11 @@ export class ConfigManager {
       if (previous.revision !== expectedRevision) throw new Error('CONFIG_INVALID: revision conflict; reload settings');
       for (const provider of config.providers) { const old = previous.config.providers.find(p => p.id === provider.id); if (old && old.baseUrl !== provider.baseUrl && provider.enabled) throw new Error('CONFIG_INVALID: address changes must first be saved disabled and revalidated'); }
       const tasks = await new Repository<Task>(join(this.root, 'tasks')).list();
+      for (const mode of ['session','project']) {
+        const directory = join(this.root, 'scopes', mode);
+        const entries = await readdir(directory, { withFileTypes: true }).catch((e: NodeJS.ErrnoException) => { if (e.code === 'ENOENT') return []; throw e; });
+        for (const entry of entries) if (entry.isDirectory() && /^[a-f0-9]{64}$/.test(entry.name)) tasks.push(...await new Repository<Task>(join(directory, entry.name, 'tasks')).list());
+      }
       for (const p of previous.config.providers) if (!config.providers.some(next => next.id === p.id) && tasks.some(t => t.providerId === p.id && !['SUCCEEDED', 'FAILED', 'CANCELLED'].includes(t.state))) throw new Error('CONFIG_INVALID: provider has unfinished tasks');
       const revision = randomUUID();
       const files = new Repository(join(this.root, 'config', 'revisions', revision));

@@ -16,12 +16,15 @@ export function apply(ctx: HostContext, options: { dataDirectory?: string; confi
   if (!['global','project','session'].includes(mode)) throw new Error('Invalid scope mode');
   const router = new ScopeRouter(ctx, root, mode);
   const apps = new Map<string, Promise<Application>>(); let disposed = false;
-  const reset = () => { for (const pending of apps.values()) void pending.then(app => app.dispose()).catch(() => {}); apps.clear(); };
+  let configurationReady: Promise<ReturnType<typeof snapshotSchema.parse>> | undefined;
+  const reset = () => { for (const pending of apps.values()) void pending.then(app => app.dispose()).catch(() => {}); apps.clear(); configurationReady = undefined; };
   const initialize = async (dataRoot: string) => {
+    const managed = await (configurationReady ??= (async () => {
     const manager = new ConfigManager(root); await manager.migrate(); const current = await manager.load();
     const config = normalizeSettings(options, current.config) ?? (options.configuration?.trim() ? snapshotSchema.parse(JSON.parse(options.configuration)) : undefined);
     if (config && JSON.stringify(current.config) !== JSON.stringify(config)) await manager.save(config, current.revision);
-    const managed = (await manager.load()).config;
+    return (await manager.load()).config;
+    })().catch(error => { configurationReady = undefined; throw error; }));
     const app = new Application(dataRoot, runtimeConfig(managed), managed);
     if (disposed) { app.dispose(); throw new Error('Plugin disposed'); }
     return app;
@@ -33,6 +36,6 @@ export function apply(ctx: HostContext, options: { dataDirectory?: string; confi
     return pending;
   };
   const prompts = registerAgents(ctx); const tools = registerTools(ctx, root, getApp, reset, (exec, action) => router.run(exec, action));
-  if (mode === 'global') void getApp().then(value => value.recover()).catch(() => ctx.logger?.warn?.('[dsh-metaontic-media] 请使用 media_config 配置媒体服务和模型。'));
+  void (mode === 'global' ? getApp() : initialize(root)).then(value => mode === 'global' ? value.recover() : value.dispose()).catch(() => ctx.logger?.warn?.('[dsh-metaontic-media] 请使用 media_config 配置媒体服务和模型。'));
   return () => { disposed = true; tools(); prompts(); reset(); };
 }
