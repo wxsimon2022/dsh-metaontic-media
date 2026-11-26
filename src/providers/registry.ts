@@ -1,5 +1,5 @@
 import type { MediaProvider, MediaRequest, ModelCapabilities, ProviderResult } from '../types/media.js';
-import { validateRequest } from './gateway.js';
+import { validateRequest } from './capabilities.js';
 export interface ModelDefinition { id: string; providerId: string; capabilities: ModelCapabilities }
 export class ModelRegistry {
   private models = new Map<string, ModelDefinition>();

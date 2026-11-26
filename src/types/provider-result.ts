@@ -1,0 +1,2 @@
+import { z } from 'zod';
+export const providerResultSchema = z.object({ remoteId: z.string().min(1).optional(), state: z.enum(['queued', 'running', 'succeeded', 'failed', 'cancelled']), outputs: z.array(z.object({ url: z.url().optional(), base64: z.string().optional(), mimeType: z.string().optional() }).refine(x => Boolean(x.url || x.base64))).optional(), error: z.object({ code: z.string(), message: z.string() }).optional(), cost: z.object({ amount: z.number().nonnegative(), currency: z.string(), source: z.enum(['reported', 'estimated']) }).optional() });

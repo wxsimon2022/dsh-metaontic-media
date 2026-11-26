@@ -1,18 +1,21 @@
 import { MediaError } from '../shared/errors.js';
-import { randomUUID } from 'node:crypto';
+import { randomUUID, createHash } from 'node:crypto';
 import type { MediaProvider, MediaRequest, ProviderResult } from '../types/media.js';
-import { validateRequest } from '../models/gateway.js';
+import { validateRequest } from '../providers/capabilities.js';
 import { Repository } from '../storage/atomic-json.js';
 export interface Task {
   schemaVersion: 1; id: string; request: MediaRequest;
-  state: 'AWAITING_CONFIRMATION' | 'CANCELLED' | 'SUBMITTING' | 'SUBMISSION_UNKNOWN' | 'RUNNING' | 'DOWNLOADING' | 'FAILED';
+  state: 'AWAITING_CONFIRMATION' | 'CANCELLED' | 'SUBMITTING' | 'SUBMISSION_UNKNOWN' | 'RUNNING' | 'DOWNLOADING' | 'FAILED' | 'PAUSED' | 'SUCCEEDED';
+  assetIds?: string[]; error?: { code: string; message: string };
+  providerId?: string; projectId?: string; attempts?: number; createdAt?: string; updatedAt?: string;
+  confirmation?: { requestHash: string; confirmedAt: string; expiresAt: string; consumedAt: string; cost: 'unknown' };
   confirmedAt?: string; result?: ProviderResult;
 }
 export class TaskService {
   constructor(private repository: Repository<Task>, private provider: MediaProvider) {}
   async create(request: MediaRequest): Promise<Task> {
     await this.validate(request);
-    const task: Task = { schemaVersion: 1, id: randomUUID(), request: structuredClone(request), state: 'AWAITING_CONFIRMATION' };
+    const task: Task = { schemaVersion: 1, id: randomUUID(), request: structuredClone(request), state: 'AWAITING_CONFIRMATION', providerId: this.provider.id, attempts: 0, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
     await this.repository.write(task.id, task);
     return task;
   }
@@ -27,12 +30,15 @@ export class TaskService {
       if (!await confirm(structuredClone(task.request))) {
         task.state = 'CANCELLED'; await this.repository.write(id, task); return task;
       }
-      task.confirmedAt = new Date().toISOString(); task.state = 'SUBMITTING';
+      task.confirmedAt = new Date().toISOString();
+      task.confirmation = { requestHash: createHash('sha256').update(JSON.stringify(task.request)).digest('hex'), confirmedAt: task.confirmedAt, consumedAt: task.confirmedAt, expiresAt: new Date(Date.now() + 60000).toISOString(), cost: 'unknown' };
+      task.attempts = (task.attempts ?? 0) + 1; task.updatedAt = task.confirmedAt; task.state = 'SUBMITTING';
       await this.repository.write(id, task);
       let result: ProviderResult;
       try { result = await this.provider.submit(structuredClone(task.request)); }
       catch (error) {
         task.state = error instanceof MediaError && ['AUTH_FAILED', 'RATE_LIMITED', 'CONTENT_REJECTED', 'UNSUPPORTED_CAPABILITY', 'CONFIG_INVALID'].includes(error.code) ? 'FAILED' : 'SUBMISSION_UNKNOWN';
+        task.error = { code: error instanceof MediaError ? error.code : 'SUBMISSION_UNKNOWN', message: 'Submission failed or result is unknown; do not blindly resubmit' };
         await this.repository.write(id, task); return task;
       }
       return this.saveResult(task, result);

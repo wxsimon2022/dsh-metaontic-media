@@ -6,7 +6,9 @@
   "types": "dist/index.d.ts",
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "cordis.patch.yml",
+    "docs/config.example.json"
   ],
   "engines": {
     "node": ">=20"
@@ -14,14 +16,14 @@
   "scripts": {
     "build": "node --input-type=module -e \"import { rmSync } from 'node:fs'; rmSync('dist', { recursive: true, force: true });\" && tsc -p tsconfig.json",
     "typecheck": "tsc --noEmit",
-    "test": "npm run build && node --test tests/unit/*.test.mjs",
+    "test": "npm run build && node --test tests/unit/*.test.mjs tests/integration/*.test.mjs",
     "prepack": "npm run build"
   },
   "devDependencies": {
-    "typescript": "^5.9.3",
-    "@types/node": "^20.19.43"
+    "@types/node": "^20.19.43",
+    "typescript": "^5.9.3"
   },
-  "description": "MetaOntic Media for DeepSeek Harness \u2014 early development placeholder",
+  "description": "MetaOntic Media：自然语言图片与视频生成、任务恢复和本地素材管理",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/wxsimon2022/dsh-metaontic-media.git"
@@ -30,5 +32,13 @@
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/"
+  },
+  "dependencies": {
+    "zod": "^4.6.7"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
   }
 }

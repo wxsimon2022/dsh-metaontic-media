@@ -49,3 +49,6 @@ Desktop.ini
 .venv/
 __pycache__/
 *.py[cod]
+
+# Local plugin installation artifacts
+.local/

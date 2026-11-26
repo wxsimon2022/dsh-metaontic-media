@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "providers": [{ "id": "images", "adapter": "openai-image", "baseUrl": "https://example.com", "apiKeyEnv": "MEDIA_IMAGE_API_KEY" }],
+  "models": [{ "id": "replace-with-real-image-model", "providerId": "images", "capabilities": { "mediaType": "image", "modes": ["text"], "maxReferences": 0, "nativeAudio": false, "negativePrompt": false, "cancellation": false, "idempotency": false } }],
+  "defaults": { "imageModel": "replace-with-real-image-model", "optimize": true, "confirmPaidGeneration": true }
+}

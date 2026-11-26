@@ -4,7 +4,7 @@ import { HttpMediaProvider, ModelRegistry } from '../../dist/index.js';
 const capabilities = { mediaType: 'video', modes: ['text'], maxReferences: 0, nativeAudio: false, negativePrompt: false, cancellation: false, idempotency: false, durations: [5] };
 const request = { requestId: 'req', model: 'video', mediaType: 'video', mode: 'text', prompt: 'cat', duration: 5, references: [] };
 function provider(fetch, overrides = {}) {
-  return new HttpMediaProvider({ id: 'test', baseUrl: 'https://example.com', apiKey: () => 'secret', models: { video: capabilities }, protocol: { submitPath: '/submit', queryPath: id => `/tasks/${encodeURIComponent(id)}`, encode: r => ({ prompt: r.prompt }), decode: r => r }, fetch, ...overrides });
+  return new HttpMediaProvider({ id: 'test', allowPrivateService: true, baseUrl: 'https://example.com', apiKey: () => 'secret', models: { video: capabilities }, protocol: { submitPath: '/submit', queryPath: id => `/tasks/${encodeURIComponent(id)}`, encode: r => ({ prompt: r.prompt }), decode: r => r }, fetch, ...overrides });
 }
 test('registry validates before HTTP and returns isolated capabilities', async () => {
   let calls = 0;
